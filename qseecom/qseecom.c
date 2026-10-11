@@ -8537,15 +8537,33 @@ long qseecom_ioctl(struct file *file,
 		break;
 	}
 	case QSEECOM_IOCTL_SET_ICE_INFO: {
+#ifdef CONFIG_MACH_XIAOMI_ALIOTH
+		struct qseecom_ice_data_t ice_data;
+
+		if (copy_from_user(&ice_data, argp, sizeof(ice_data)))
+			return -EFAULT;
+		/* Alioth uses per-bio FBE/default-key contexts, not legacy FDE. */
+		return 0;
+#else
 		//Return success for backwards compatibility
 		//This call is redundant and not required anymore
 		pr_info("SET_ICE_INFO is reduntant call,return success for backwards compatibility\n");
 		ret = 0;
 		break;
+#endif
 	}
 	case QSEECOM_IOCTL_FBE_CLEAR_KEY: {
+#ifdef CONFIG_MACH_XIAOMI_ALIOTH
+		struct qseecom_ice_key_data_t key_data;
+
+		if (copy_from_user(&key_data, argp, sizeof(key_data)))
+			return -EFAULT;
+		/* Donor CONFIG_PFK=n returns ENODEV. Do not claim key eviction. */
+		return -ENODEV;
+#else
 		pr_err("QSEECOM_IOCTL_FBE_CLEAR_KEY IOCTL is deprecated\n");
 		return -EINVAL;
+#endif
 	}
 	default:
 		pr_err("Invalid IOCTL: 0x%x\n", cmd);
